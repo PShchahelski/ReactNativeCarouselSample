@@ -40,12 +40,12 @@ export default function App() {
     const [numberScrollContentHeight, setNumberScrollContentHeight] = useState(0);
     const [titleScrollEndPadding, setTitleScrollEndPadding] = useState(0);
 
-    const ItemNumber = ({id, number}) => (
+    const Score = ({id, number}) => (
         <Text key={id} style={styles.number}>{number}</Text>
     );
 
-    const renderItemNumber = function (item) {
-        return <ItemNumber key={item.id} number={item.number}/>
+    const renderNumber = function (number) {
+        return <Score key={number.id} number={number.number}/>
     };
 
     const onContentSizeChangeTitleScroll = (contentWidth) => {
@@ -63,14 +63,40 @@ export default function App() {
     }
 
     const handleScrollEnd = (event) => {
-        console.log("event.nativeEvent.contentOffset.x: " + event.nativeEvent.contentOffset.x)
-        // const percent = (event.nativeEvent.contentOffset.x / titleScrollContentWidth) * 0.5794
-        const percent = (event.nativeEvent.contentOffset.x / titleScrollContentWidth)
-        console.log("percent: " + percent)
+        const x = event.nativeEvent.contentOffset.x
+        console.log("event.nativeEvent.contentOffset.x: " + x)
 
-        const offset = numberScrollContentHeight * percent
+        let blockIndex = 0
+        for (let i = 0; i < snapOffset.length; i++) {
+            if (x <= snapOffset[i]) {
+                break
+            }
+            blockIndex++
+        }
+        console.log("ind: " + blockIndex)
 
-        numberScrollContainer.current.scrollTo({y: offset, x: 0, animated: false})
+        if (blockIndex > snapOffset.length - 1 || x < 0) {
+            return
+        }
+
+        let previousWidthSum = snapOffset[blockIndex - 1]
+        console.log("handleScrollEnd# previousWidthSum: " + previousWidthSum)
+
+        const alignX = x - previousWidthSum
+        console.log("handleScrollEnd# alignX: " + alignX)
+        const alignOffset = snapOffset[blockIndex] - previousWidthSum
+        console.log("handleScrollEnd# alignX: " + alignOffset + " snapOffset[ind]: " + snapOffset[blockIndex])
+        console.log("titleScrollContentWidth# titleScrollContentWidth: " + titleScrollContentWidth)
+
+        let y
+        if (x === 0) {
+            y = 0
+        } else {
+            y = alignX / alignOffset * 67 + (blockIndex - 1) * 67
+        }
+        console.log("y: " + y)
+
+        numberScrollContainer.current.scrollTo({y: y, x: 0, animated: false})
     }
 
     const onLayoutTitle = (event, itemIndex) => {
@@ -82,20 +108,30 @@ export default function App() {
         console.log("widthConcat: " + titleWidth)
 
         let isFinishedLayoutingTitleScroll = titleWidth.every(element => element !== null)
-        if (isFinishedLayoutingTitleScroll) {
-            computeOffsets();
-
-            const padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - titleWidth[titleWidth.length - 1] / 2
-            console.log("onLayoutTitle# padding: " + padding)
-            setTitleScrollEndPadding(padding)
-        }
+        setTitleScrollOffsets(isFinishedLayoutingTitleScroll)
+        setNumberScrollEndPadding(isFinishedLayoutingTitleScroll)
     }
 
-    function computeOffsets() {
-        let offsets = titleWidth.map((item, index) => (
+    function setNumberScrollEndPadding(isFinishedLayouting) {
+        let padding
+        if (isFinishedLayouting) {
+            padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - titleWidth[titleWidth.length - 1] / 2
+        } else {
+            padding = 0
+        }
+        console.log("onLayoutTitle# padding: " + padding)
+
+        setTitleScrollEndPadding(padding)
+    }
+
+    function setTitleScrollOffsets(isFinishedLayouting) {
+        if (!isFinishedLayouting) return
+
+        const offsets = titleWidth.map((item, index) => (
             computeOffset(item, index)
         ))
-        console.log("onLayoutTitleContainer# offsets: " + offsets)
+        console.log("setTitleScrollOffsets# offsets: " + offsets)
+
         setSnapOffset(offsets)
     }
 
@@ -124,7 +160,7 @@ export default function App() {
                             onContentSizeChange={onContentSizeChangeNumberScroll}
                         >
                             <View style={styles.numberContainer}>
-                                {DATA.map((item, _) => renderItemNumber(item))}
+                                {DATA.map((number, _) => renderNumber(number))}
                             </View>
                         </ScrollView>
                     </View>
@@ -141,7 +177,6 @@ export default function App() {
                     decelerationRate="fast"
                     snapToOffsets={snapOffset}
                     scrollEventThrottle={16}
-                    disableIntervalMomentum={true}
                     onContentSizeChange={onContentSizeChangeTitleScroll}
                     onScroll={handleScrollEnd}
                 >
