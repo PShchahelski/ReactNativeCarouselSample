@@ -2,25 +2,25 @@ import {StatusBar} from 'expo-status-bar';
 import React, {useRef, useState} from 'react';
 import {Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, Text, View} from 'react-native';
 
-const DATA = [
+const SCORES = [
     {
         id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
-        number: '200000',
+        value: '200000',
         title: 'Mindful minutes',
     },
     {
         id: '3ac68afc-c605-48d3-a4f8-fbd91aww7f63',
-        number: '0',
+        value: '0',
         title: 'Current streak',
     },
     {
         id: '3ac68afc-c605-48d3-a4f8-fbdffaa97f63',
-        number: '0',
+        value: '0',
         title: 'Longest streak',
     },
     {
         id: '58694a0f-3da1-471f-bd96-145571e29d72',
-        number: '100',
+        value: '100',
         title: 'Episodes completed',
     }
 ];
@@ -33,19 +33,19 @@ const MAIN_CONTAINER_HORIZONTAL_SPACING = 16
 
 export default function App() {
 
-    const numberScrollContainer = useRef()
+    const scoreScrollContainerRef = useRef()
     const [snapOffset, setSnapOffset] = useState(Array());
-    const [titleWidth, setTitleWidth] = useState(Array(DATA.length).fill(null));
+    const [titleWidth, setTitleWidth] = useState(Array(SCORES.length).fill(null));
     const [titleScrollContentWidth, setTitleScrollContentWidth] = useState(0);
-    const [numberScrollContentHeight, setNumberScrollContentHeight] = useState(0);
+    const [scoreScrollContentHeight, setScoreScrollContentHeight] = useState(0);
     const [titleScrollEndPadding, setTitleScrollEndPadding] = useState(0);
 
-    const Score = ({id, number}) => (
-        <Text key={id} style={styles.number}>{number}</Text>
+    const Score = ({id, score}) => (
+        <Text key={id} style={styles.score}>{score}</Text>
     );
 
-    const renderNumber = function (number) {
-        return <Score key={number.id} number={number.number}/>
+    const renderScore = function (score) {
+        return <Score key={score.id} score={score.value}/>
     };
 
     const onContentSizeChangeTitleScroll = (contentWidth) => {
@@ -57,9 +57,9 @@ export default function App() {
         setTitleScrollContentWidth(width)
     }
 
-    const onContentSizeChangeNumberScroll = (_, contentHeight) => {
-        // console.log("contentHeight: " + contentHeight)
-        setNumberScrollContentHeight(contentHeight)
+    const onContentSizeChangeScoreScroll = (_, contentHeight) => {
+        console.log("contentHeight: " + contentHeight)
+        setScoreScrollContentHeight(contentHeight)
     }
 
     const handleScrollEnd = (event) => {
@@ -96,7 +96,7 @@ export default function App() {
         }
         console.log("y: " + y)
 
-        numberScrollContainer.current.scrollTo({y: y, x: 0, animated: false})
+        scoreScrollContainerRef.current.scrollTo({y: y, x: 0, animated: false})
     }
 
     const onLayoutTitle = (event, itemIndex) => {
@@ -109,10 +109,10 @@ export default function App() {
 
         let isFinishedLayoutingTitleScroll = titleWidth.every(element => element !== null)
         setTitleScrollOffsets(isFinishedLayoutingTitleScroll)
-        setNumberScrollEndPadding(isFinishedLayoutingTitleScroll)
+        setScoreScrollEndPadding(isFinishedLayoutingTitleScroll)
     }
 
-    function setNumberScrollEndPadding(isFinishedLayouting) {
+    function setScoreScrollEndPadding(isFinishedLayouting) {
         let padding
         if (isFinishedLayouting) {
             padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - titleWidth[titleWidth.length - 1] / 2
@@ -151,16 +151,16 @@ export default function App() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.mainContainer}>
-                <View style={styles.rewardContainer}>
+                <View style={styles.scoreContainer}>
                     <Image source={require('./assets/left_image.png')} style={styles.image}/>
-                    <View style={[styles.numberScrollContainer]}>
+                    <View style={[styles.scoreScrollContainer]}>
                         <ScrollView
-                            ref={numberScrollContainer}
+                            ref={scoreScrollContainerRef}
                             scrollEnabled={false}
-                            onContentSizeChange={onContentSizeChangeNumberScroll}
+                            onContentSizeChange={onContentSizeChangeScoreScroll}
                         >
-                            <View style={styles.numberContainer}>
-                                {DATA.map((number, _) => renderNumber(number))}
+                            <View style={styles.scoreValueContainer}>
+                                {SCORES.map((score, _) => renderScore(score))}
                             </View>
                         </ScrollView>
                     </View>
@@ -180,12 +180,12 @@ export default function App() {
                     onContentSizeChange={onContentSizeChangeTitleScroll}
                     onScroll={handleScrollEnd}
                 >
-                    <View style={styles.titleContainer}>
-                        {DATA.map((item, index) => (
+                    <View style={styles.scoreTitleContainer}>
+                        {SCORES.map((score, index) => (
                             <Text key={index}
-                                  style={styles.title}
+                                  style={styles.scoreTitle}
                                   onLayout={(event) => onLayoutTitle(event, index)}
-                            >{item.title}</Text>
+                            >{score.title}</Text>
                         ))}
                     </View>
                 </ScrollView>
@@ -196,10 +196,10 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-    titleContainer: {
+    scoreTitleContainer: {
         flexDirection: 'row',
     },
-    numberContainer: {
+    scoreValueContainer: {
         flexDirection: 'column',
     },
     container: {
@@ -210,12 +210,12 @@ const styles = StyleSheet.create({
         marginHorizontal: MAIN_CONTAINER_HORIZONTAL_SPACING,
         flexDirection: "column",
     },
-    rewardContainer: {
+    scoreContainer: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
     },
-    numberScrollContainer: {
+    scoreScrollContainer: {
         maxHeight: 67,
         marginHorizontal: 12
     },
@@ -228,14 +228,14 @@ const styles = StyleSheet.create({
         minWidth: 104,
         marginHorizontal: 12,
     },
-    number: {
+    score: {
         fontSize: 32,
         textAlign: "center",
         lineHeight: 67,
         fontWeight: "bold",
         color: "#fff"
     },
-    title: {
+    scoreTitle: {
         fontSize: 14,
         textAlign: "center",
         lineHeight: 20,
