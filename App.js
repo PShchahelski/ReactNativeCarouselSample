@@ -6,7 +6,7 @@ const SCORES = [
     {
         id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
         value: '200000',
-        title: 'Mindful minutes',
+        title: ' minutes',
     },
     {
         id: '3ac68afc-c605-48d3-a4f8-fbd91aww7f63',
@@ -25,7 +25,6 @@ const SCORES = [
     }
 ];
 
-console.log("Dimensions.get('window').width: " + Dimensions.get('window').width)
 const HALF_SCREEN_WIDTH = Dimensions.get('window').width / 2
 const FOR_TITLE_INSET_LEFT_SPACING = HALF_SCREEN_WIDTH - 28
 const TITLE_HORIZONTAL_SPACING = 8
@@ -36,9 +35,8 @@ export default function App() {
     const scoreScrollContainerRef = useRef()
     const [snapOffset, setSnapOffset] = useState(Array());
     const [titleWidth, setTitleWidth] = useState(Array(SCORES.length).fill(null));
-    const [titleScrollContentWidth, setTitleScrollContentWidth] = useState(0);
-    const [scoreScrollContentHeight, setScoreScrollContentHeight] = useState(0);
     const [titleScrollEndPadding, setTitleScrollEndPadding] = useState(0);
+    const [scoreValueHeight, setScoreValueHeight] = useState(0);
 
     const Score = ({id, score}) => (
         <Text key={id} style={styles.score}>{score}</Text>
@@ -48,90 +46,62 @@ export default function App() {
         return <Score key={score.id} score={score.value}/>
     };
 
-    const onContentSizeChangeTitleScroll = (contentWidth) => {
-        console.log("onContentSizeChangeTitleScroll# contentWidth: " + contentWidth)
-
-        const width = contentWidth - FOR_TITLE_INSET_LEFT_SPACING - titleScrollEndPadding - 2 * TITLE_HORIZONTAL_SPACING
-        console.log("onContentSizeChangeTitleScroll# width: " + width + " contentWidth:" + contentWidth)
-
-        setTitleScrollContentWidth(width)
-    }
-
     const onContentSizeChangeScoreScroll = (_, contentHeight) => {
-        console.log("contentHeight: " + contentHeight)
-        setScoreScrollContentHeight(contentHeight)
+        setScoreValueHeight(contentHeight / SCORES.length)
     }
 
     const handleScrollEnd = (event) => {
-        const x = event.nativeEvent.contentOffset.x
-        console.log("event.nativeEvent.contentOffset.x: " + x)
+        const scrollX = event.nativeEvent.contentOffset.x
+        const blockIndex = findBlockIndexScrollPassed(scrollX)
 
-        let blockIndex = 0
-        for (let i = 0; i < snapOffset.length; i++) {
-            if (x <= snapOffset[i]) {
-                break
-            }
-            blockIndex++
-        }
-        console.log("ind: " + blockIndex)
-
-        if (blockIndex > snapOffset.length - 1 || x < 0) {
+        // for ios only check
+        if (blockIndex > snapOffset.length - 1 || scrollX < 0) {
             return
         }
 
-        let previousWidthSum = snapOffset[blockIndex - 1]
-        console.log("handleScrollEnd# previousWidthSum: " + previousWidthSum)
-
-        const alignX = x - previousWidthSum
-        console.log("handleScrollEnd# alignX: " + alignX)
-        const alignOffset = snapOffset[blockIndex] - previousWidthSum
-        console.log("handleScrollEnd# alignX: " + alignOffset + " snapOffset[ind]: " + snapOffset[blockIndex])
-        console.log("titleScrollContentWidth# titleScrollContentWidth: " + titleScrollContentWidth)
-
-        let y
-        if (x === 0) {
-            y = 0
-        } else {
-            y = alignX / alignOffset * 67 + (blockIndex - 1) * 67
-        }
-        console.log("y: " + y)
+        const y = computeScoreValueVerticalScrollOffset(scrollX, blockIndex)
 
         scoreScrollContainerRef.current.scrollTo({y: y, x: 0, animated: false})
     }
 
-    const onLayoutTitle = (event, itemIndex) => {
-        const width = event.nativeEvent.layout.width
-        console.log("onLayoutTitle# width: " + width + " itemIndex: " + itemIndex)
+    function findBlockIndexScrollPassed(scrollX) {
+        let index = 0
+        for (let i = 0; i < snapOffset.length; i++) {
+            if (scrollX <= snapOffset[i]) {
+                break
+            }
+            index++
+        }
+        return index;
+    }
 
-        titleWidth[itemIndex] = width
+    function computeScoreValueVerticalScrollOffset(scrollX, blockIndex): number {
+        const previousPassedOffset = snapOffset[blockIndex - 1]
+        const alignX = scrollX - previousPassedOffset
+        const alignOffset = snapOffset[blockIndex] - previousPassedOffset
+
+        if (scrollX === 0) {
+            return 0
+        } else {
+            return alignX / alignOffset * scoreValueHeight + (blockIndex - 1) * scoreValueHeight
+        }
+    }
+
+    const onLayoutTitle = (event, index) => {
+        titleWidth[index] = event.nativeEvent.layout.width
         setTitleWidth(titleWidth)
-        console.log("widthConcat: " + titleWidth)
 
         let isFinishedLayoutingTitleScroll = titleWidth.every(element => element !== null)
         setTitleScrollOffsets(isFinishedLayoutingTitleScroll)
         setScoreScrollEndPadding(isFinishedLayoutingTitleScroll)
     }
 
-    function setScoreScrollEndPadding(isFinishedLayouting) {
-        let padding
-        if (isFinishedLayouting) {
-            padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - titleWidth[titleWidth.length - 1] / 2
-        } else {
-            padding = 0
-        }
-        console.log("onLayoutTitle# padding: " + padding)
-
-        setTitleScrollEndPadding(padding)
-    }
-
     function setTitleScrollOffsets(isFinishedLayouting) {
         if (!isFinishedLayouting) return
 
-        const offsets = titleWidth.map((item, index) => (
-            computeOffset(item, index)
+        const offsets = titleWidth.map((width, index) => (
+            computeOffset(width, index)
         ))
-        console.log("setTitleScrollOffsets# offsets: " + offsets)
-
         setSnapOffset(offsets)
     }
 
@@ -144,8 +114,21 @@ export default function App() {
         if (index > 0) {
             widthOfCurrentView = width / 2
         }
+        let removeLastItemPadding = 0
+        if (index === titleWidth.length - 1) {
+            removeLastItemPadding = 12
+        }
 
-        return previousWidthSum + index * 2 * TITLE_HORIZONTAL_SPACING + widthOfCurrentView
+        return previousWidthSum + index * 2 * TITLE_HORIZONTAL_SPACING + widthOfCurrentView - removeLastItemPadding
+    }
+
+    function setScoreScrollEndPadding(isFinishedLayouting) {
+        let padding = 0
+        if (isFinishedLayouting) {
+            padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - titleWidth[titleWidth.length - 1] / 2
+        }
+
+        setTitleScrollEndPadding(padding)
     }
 
     return (
@@ -170,14 +153,14 @@ export default function App() {
                     contentContainerStyle={{
                         paddingEnd: titleScrollEndPadding,
                         paddingStart: FOR_TITLE_INSET_LEFT_SPACING,
-                        marginVertical: 12,
+                        paddingVertical: 12,
                     }}
                     horizontal
                     pagingEnabled
                     decelerationRate="fast"
                     snapToOffsets={snapOffset}
                     scrollEventThrottle={16}
-                    onContentSizeChange={onContentSizeChangeTitleScroll}
+                    overScrollMode={'never'}
                     onScroll={handleScrollEnd}
                 >
                     <View style={styles.scoreTitleContainer}>
@@ -223,10 +206,6 @@ const styles = StyleSheet.create({
         width: 42,
         height: 100,
         tintColor: "#26ffffff"
-    },
-    item: {
-        minWidth: 104,
-        marginHorizontal: 12,
     },
     score: {
         fontSize: 32,
