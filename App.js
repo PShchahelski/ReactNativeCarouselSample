@@ -26,16 +26,16 @@ const SCORES = [
 ];
 
 const HALF_SCREEN_WIDTH = Dimensions.get('window').width / 2
-const FOR_TITLE_INSET_LEFT_SPACING = HALF_SCREEN_WIDTH - 28
-const TITLE_HORIZONTAL_SPACING = 8
 const MAIN_CONTAINER_HORIZONTAL_SPACING = 16
+const SCORE_TITLE_SCROLL_START_SPACING = HALF_SCREEN_WIDTH - 28
+const SCORE_TITLE_ITEM_HORIZONTAL_SPACING = 8
 
 export default function App() {
 
     const scoreScrollContainerRef = useRef()
     const [snapOffset, setSnapOffset] = useState(Array());
-    const [titleWidth, setTitleWidth] = useState(Array(SCORES.length).fill(null));
-    const [titleScrollEndPadding, setTitleScrollEndPadding] = useState(0);
+    const [scoreTitleWidth, setScoreTitleWidth] = useState(Array(SCORES.length).fill(null));
+    const [scoreTitleScrollEndPadding, setScoreTitleScrollEndPadding] = useState(0);
     const [scoreValueHeight, setScoreValueHeight] = useState(0);
 
     const Score = ({id, score}) => (
@@ -50,7 +50,7 @@ export default function App() {
         setScoreValueHeight(contentHeight / SCORES.length)
     }
 
-    const handleScrollEnd = (event) => {
+    const handleScoreTitleScrollEnd = (event) => {
         const scrollX = event.nativeEvent.contentOffset.x
         const blockIndex = findBlockIndexScrollPassed(scrollX)
 
@@ -87,19 +87,19 @@ export default function App() {
         }
     }
 
-    const onLayoutTitle = (event, index) => {
-        titleWidth[index] = event.nativeEvent.layout.width
-        setTitleWidth(titleWidth)
+    const onLayoutScoreTitle = (event, index) => {
+        scoreTitleWidth[index] = event.nativeEvent.layout.width
+        setScoreTitleWidth(scoreTitleWidth)
 
-        let isFinishedLayoutingTitleScroll = titleWidth.every(element => element !== null)
-        setTitleScrollOffsets(isFinishedLayoutingTitleScroll)
+        let isFinishedLayoutingTitleScroll = scoreTitleWidth.every(element => element !== null)
+        setScoreTitleScrollOffsets(isFinishedLayoutingTitleScroll)
         setScoreScrollEndPadding(isFinishedLayoutingTitleScroll)
     }
 
-    function setTitleScrollOffsets(isFinishedLayouting) {
+    function setScoreTitleScrollOffsets(isFinishedLayouting) {
         if (!isFinishedLayouting) return
 
-        const offsets = titleWidth.map((width, index) => (
+        const offsets = scoreTitleWidth.map((width, index) => (
             computeOffset(width, index)
         ))
         setSnapOffset(offsets)
@@ -108,27 +108,27 @@ export default function App() {
     function computeOffset(width, index) {
         let previousWidthSum = 0
         for (let i = 0; i < index; i++) {
-            previousWidthSum += titleWidth[i]
+            previousWidthSum += scoreTitleWidth[i]
         }
         let widthOfCurrentView = 0
         if (index > 0) {
             widthOfCurrentView = width / 2
         }
         let removeLastItemPadding = 0
-        if (index === titleWidth.length - 1) {
+        if (index === scoreTitleWidth.length - 1) {
             removeLastItemPadding = 12
         }
 
-        return previousWidthSum + index * 2 * TITLE_HORIZONTAL_SPACING + widthOfCurrentView - removeLastItemPadding
+        return previousWidthSum + index * 2 * SCORE_TITLE_ITEM_HORIZONTAL_SPACING + widthOfCurrentView - removeLastItemPadding
     }
 
     function setScoreScrollEndPadding(isFinishedLayouting) {
         let padding = 0
         if (isFinishedLayouting) {
-            padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - titleWidth[titleWidth.length - 1] / 2
+            padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - scoreTitleWidth[scoreTitleWidth.length - 1] / 2
         }
 
-        setTitleScrollEndPadding(padding)
+        setScoreTitleScrollEndPadding(padding)
     }
 
     return (
@@ -151,8 +151,8 @@ export default function App() {
                 </View>
                 <ScrollView
                     contentContainerStyle={{
-                        paddingEnd: titleScrollEndPadding,
-                        paddingStart: FOR_TITLE_INSET_LEFT_SPACING,
+                        paddingEnd: scoreTitleScrollEndPadding,
+                        paddingStart: SCORE_TITLE_SCROLL_START_SPACING,
                         paddingVertical: 12,
                     }}
                     horizontal
@@ -161,13 +161,13 @@ export default function App() {
                     snapToOffsets={snapOffset}
                     scrollEventThrottle={16}
                     overScrollMode={'never'}
-                    onScroll={handleScrollEnd}
+                    onScroll={handleScoreTitleScrollEnd}
                 >
                     <View style={styles.scoreTitleContainer}>
                         {SCORES.map((score, index) => (
                             <Text key={index}
                                   style={styles.scoreTitle}
-                                  onLayout={(event) => onLayoutTitle(event, index)}
+                                  onLayout={(event) => onLayoutScoreTitle(event, index)}
                             >{score.title}</Text>
                         ))}
                     </View>
@@ -220,6 +220,6 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         fontWeight: "bold",
         color: "#fff",
-        marginHorizontal: TITLE_HORIZONTAL_SPACING,
+        marginHorizontal: SCORE_TITLE_ITEM_HORIZONTAL_SPACING,
     }
 });
