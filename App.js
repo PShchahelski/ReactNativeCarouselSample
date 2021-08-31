@@ -49,7 +49,12 @@ export default function App() {
     };
 
     const onContentSizeChangeTitleScroll = (contentWidth) => {
-        setTitleScrollContentWidth(contentWidth)
+        console.log("onContentSizeChangeTitleScroll# contentWidth: " + contentWidth)
+
+        const width = contentWidth - FOR_TITLE_INSET_LEFT_SPACING - titleScrollEndPadding - 2 * TITLE_HORIZONTAL_SPACING
+        console.log("onContentSizeChangeTitleScroll# width: " + width + " contentWidth:" + contentWidth)
+
+        setTitleScrollContentWidth(width)
     }
 
     const onContentSizeChangeNumberScroll = (_, contentHeight) => {
@@ -60,7 +65,7 @@ export default function App() {
     const handleScrollEnd = (event) => {
         console.log("event.nativeEvent.contentOffset.x: " + event.nativeEvent.contentOffset.x)
         // const percent = (event.nativeEvent.contentOffset.x / titleScrollContentWidth) * 0.5794
-        const percent = (event.nativeEvent.contentOffset.x / titleScrollContentWidth) * 0.5794
+        const percent = (event.nativeEvent.contentOffset.x / titleScrollContentWidth)
         console.log("percent: " + percent)
 
         const offset = numberScrollContentHeight * percent
@@ -81,11 +86,7 @@ export default function App() {
             computeOffsets();
 
             const padding = HALF_SCREEN_WIDTH - 2 * MAIN_CONTAINER_HORIZONTAL_SPACING - titleWidth[titleWidth.length - 1] / 2
-            const width = titleScrollContentWidth - FOR_TITLE_INSET_LEFT_SPACING - padding - 2 * TITLE_HORIZONTAL_SPACING
-
             console.log("onLayoutTitle# padding: " + padding)
-            console.log("onLayoutTitle# width: " + width + " titleScrollContentWidth: " + titleScrollContentWidth)
-            setTitleScrollContentWidth(width)
             setTitleScrollEndPadding(padding)
         }
     }
